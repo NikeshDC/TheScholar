@@ -116,21 +116,7 @@ private:
 
         outStream.close();
     }
-    /*void readFromFile()
-    {
-        std::ifstream inStream(path.c_str());
-        std::getline(inStream, bookPath);
-        std::getline(inStream, name);
-        std::getline(inStream, author);
-        std::getline(inStream, genre);
-        std::getline(inStream, date);
-        std::getline(inStream, extrades);
-        inStream.close();
-    }
-    bool descriptorFileAlreadyExists()
-    {
 
-    }*/
     void BookDescriptor::createDir_Name()
     {
         std::vector<std::string> bookWords;
@@ -180,26 +166,29 @@ private:
                 outstream.close();
             }
             //WRITING AUTHOR NAME TO HEADER FILE
-            if(status == FILE_NOT_SORTED)
+            if(!Utility::FileHandler::exists(curBookPath))
             {
-                outstream.open(headerPath.c_str(),std::ios_base::app);
-                for(int j=0;j<MAX_AUTHOR_NAME;j++)
+                if(status == FILE_NOT_SORTED)
                 {
-                    if(j<authors[i].size())
-                        outstream<<authors[i][j];
-                    else
-                        outstream<<AUTHOR_HEADER_BLANK_CHAR;
+                    outstream.open(headerPath.c_str(),std::ios_base::app);
+                    for(int j=0;j<MAX_AUTHOR_NAME;j++)
+                    {
+                        if(j<authors[i].size())
+                            outstream<<authors[i][j];
+                        else
+                            outstream<<AUTHOR_HEADER_BLANK_CHAR;
+                    }
                 }
+                else
+                {
+                    outstream.open(headerPath.c_str());
+                    outstream.seekg(0, std::ios::end);
+                    int noOfEls = outstream.tellg() / MAX_AUTHOR_NAME;
+                    outstream.seekg(0, std::ios::beg);
+                    insertInSortedFile(outstream, authors[i], noOfEls, MAX_AUTHOR_NAME);
+                }
+                outstream.close();
             }
-            else
-            {
-                outstream.open(headerPath.c_str());
-                outstream.seekg(0, std::ios::end);
-                int noOfEls = outstream.tellg() / MAX_AUTHOR_NAME;
-                outstream.seekg(0, std::ios::beg);
-                insertInSortedFile(outstream, authors[i], noOfEls, MAX_AUTHOR_NAME);
-            }
-            outstream.close();
 
             outstream.open(curBookPath.c_str(),std::ios_base::app);
             outstream<<path<<"\n";
@@ -214,7 +203,7 @@ private:
         bookPath = REQ_DIRS::SEARCH_BOOK_DATE + date;
         std::ofstream outstream;
         outstream.open(bookPath.c_str(),std::ios_base::app);
-        outstream<<path;
+        outstream<<path<<"/n";
         outstream.close();
     }
     void BookDescriptor::createDir_genre()
@@ -231,7 +220,7 @@ private:
             mkdir(baseBookPath.c_str());
             curBookPath = baseBookPath + DIRECTORY_SEPERATOR + genres[i];
             outstream.open(curBookPath.c_str(),std::ios_base::app);
-            outstream<<path;
+            outstream<<path<<"\n";
             outstream.close();
 
             baseBookPath.pop_back();
@@ -271,5 +260,3 @@ int main()
     bd.createDescriptorFile();
     bd.createAllDirectories();
 }
-
-
