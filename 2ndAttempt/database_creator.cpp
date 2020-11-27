@@ -16,7 +16,6 @@ const std::string BOOKDES_EXT = ".des";
 const std::string PATH_FILE = "#.txt";
 const std::string FILE_AUTHOR_HEADER = "#header.txt";
 const std::string FILE_AUTHOR_STATUS = "#status.txt";
-const std::string FILE_AUTHOR_PAIR = "#pair.txt";
 
 namespace REQ_DIRS
 {
@@ -112,7 +111,9 @@ private:
         outStream<<author<<"\n";
         outStream<<genre<<"\n";
         outStream<<date<<"\n";
-        outStream<<extrades;
+        outStream<<extrades<<"\n";
+        outStream<<0<<'\n';
+        outStream<<0;
 
         outStream.close();
     }
@@ -203,7 +204,7 @@ private:
         bookPath = REQ_DIRS::SEARCH_BOOK_DATE + date;
         std::ofstream outstream;
         outstream.open(bookPath.c_str(),std::ios_base::app);
-        outstream<<path<<"/n";
+        outstream<<path;
         outstream.close();
     }
     void BookDescriptor::createDir_genre()
@@ -220,7 +221,7 @@ private:
             mkdir(baseBookPath.c_str());
             curBookPath = baseBookPath + DIRECTORY_SEPERATOR + genres[i];
             outstream.open(curBookPath.c_str(),std::ios_base::app);
-            outstream<<path<<"\n";
+            outstream<<path;
             outstream.close();
 
             baseBookPath.pop_back();
