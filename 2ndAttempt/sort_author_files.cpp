@@ -33,8 +33,8 @@ void _sortHeaderFiles(std::string dirPath, int sortstatus)
         headerfilepath = dirPath + ent->d_name + '/' + FILE_AUTHOR_HEADER;
         statusfilepath = dirPath + ent->d_name + '/' + FILE_AUTHOR_STATUS;
         headerfile.open(headerfilepath.c_str());
-        QuickSort qs(headerfile, MAX_AUTHOR_NAME);
-        qs.sort();
+        HeapSort hs(headerfile, MAX_AUTHOR_NAME);
+        hs.sort();
         headerfile.close();
         statusfile.open(statusfilepath.c_str());
         statusfile<<sortstatus;
