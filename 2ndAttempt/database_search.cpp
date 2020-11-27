@@ -236,7 +236,7 @@ bool FullSearch(std::string keywords[], std::vector<BookDescriptor> &pribdlist, 
         case GENRE:
             {
                 std::vector<std::string> genreWords;
-                int j, prevResCount;
+                int j;
                 Utility::String::breakString(keywords[GENRE], genreWords, std::string(" "));
                 for(j=0; j<genreWords.size(); j++)
                 {
@@ -257,9 +257,7 @@ bool FullSearch(std::string keywords[], std::vector<BookDescriptor> &pribdlist, 
                         bd.path = bookDesPath;
                         bd.readFromFile();
                         pribdlist.push_back(bd);
-                        prevResCount = pribdlist.size();
-                        if(prevResCount == pribdlist.size())
-                            resultCount++;
+                        resultCount++;
                     }
                     if(resultCount == MAX_SEARCH_RESULT + 1)
                         pribdlist.pop_back(); //extra element is kept at end just to be sure that more result can be found
