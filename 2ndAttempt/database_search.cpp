@@ -39,27 +39,30 @@ class BookDescriptor
 public:
     std::string bookPath;
     std::string name;
-    std::vector<std::string> authors;
+    std::vector<std::string> authors_search;
+    std::vector<std::string> authors_display;
     std::vector<std::string> genres;
     std::string date;
     std::vector<std::string> extrades;
     std::string path;
+    int noOfReveiws;
+    float review;
 
     void clearAll();
-    void readFromFileForSearch();
-    void readFromFileForDisplay();
+    void readFromFile();
 };
     void BookDescriptor::clearAll()
     {
         bookPath = "";
         name = "";
         date = "";
-        authors.clear();
+        authors_search.clear();
+        authors_display.clear();
         genres.clear();
         extrades.clear();
     }
 
-    void BookDescriptor::readFromFileForSearch()
+    void BookDescriptor::readFromFile()
     {
         clearAll();
         std::string author;
@@ -69,30 +72,15 @@ public:
         getline(inStream, bookPath);
         getline(inStream, name);
         getline(inStream, author);
-        Utility::String::breakString(author, authors, "$ ");
+        Utility::String::breakString(author, authors_search, "$ ");
+        Utility::String::breakString(author, authors_display, "$");
         getline(inStream, genre);
         Utility::String::breakString(genre, genres, "$ ");
         getline(inStream, date);
         getline(inStream, extrade);
         Utility::String::breakString(extrade, extrades, "$");
-        inStream.close();
-    }
-    void BookDescriptor::readFromFileForDisplay()
-    {
-        clearAll();
-        std::string author;
-        std::string genre;
-        std::string extrade;
-        std::ifstream inStream(path.c_str());
-        getline(inStream, bookPath);
-        getline(inStream, name);
-        getline(inStream, author);
-        Utility::String::breakString(author, authors, "$");
-        getline(inStream, genre);
-        Utility::String::breakString(genre, genres, "$");
-        getline(inStream, date);
-        getline(inStream, extrade);
-        Utility::String::breakString(extrade, extrades, "$");
+        inStream>>noOfReveiws;
+        inStream>>review;
         inStream.close();
     }
 
@@ -108,9 +96,9 @@ void filterResult(std::vector<BookDescriptor> &pribdlist,int keyword_index, std:
             case AUTHOR:
                 {
                     eraseflag = 1;
-                    for(int k=0; k<pribdlist[i].authors.size();k++ )
+                    for(int k=0; k<pribdlist[i].authors_search.size();k++ )
                     {
-                        if(pribdlist[i].authors[k] == keyword)
+                        if(pribdlist[i].authors_search[k] == keyword)
                         {
                             eraseflag = 0;
                             break;
@@ -154,7 +142,8 @@ void filterResult(std::vector<BookDescriptor> &pribdlist,int keyword_index, std:
     }
 }
 
-void FullSearch(std::string keywords[], std::vector<BookDescriptor> &pribdlist)
+//RETURNS TRUE IF MORE RESULT CAN BE FOUND
+bool FullSearch(std::string keywords[], std::vector<BookDescriptor> &pribdlist, int searchIndex_start = 0)
 {
     int i;
     std::string searchPath;
@@ -162,6 +151,7 @@ void FullSearch(std::string keywords[], std::vector<BookDescriptor> &pribdlist)
     std::ifstream reader;
     BookDescriptor bd;
     int resultCount = 0;
+    bool fullResultRead = false;
     for(i=0; i<SEARCH_KEYWORDS_SIZE; i++)
         if(keywords[i].size() > 0)
             break;
@@ -180,19 +170,15 @@ void FullSearch(std::string keywords[], std::vector<BookDescriptor> &pribdlist)
                         break;
                 }
                 if(j == authorWords.size())
-                    return;
+                    return false;
                 while(std::getline(reader,bookDesPath))
                 {
                     bd.path = bookDesPath;
-                    bd.readFromFileForSearch();
+                    bd.readFromFile();
                     pribdlist.push_back(bd);
                 }
                 for(int m=i+1;m<SEARCH_KEYWORDS_SIZE;m++)
                     filterResult(pribdlist, m, keywords[m]);
-                for(int k=0;k<authorWords.size();k++)
-                    if(k!=i)
-                        filterResult(pribdlist, AUTHOR, authorWords[k]);
-                reader.close();
             }
             break;
         case NAME:
@@ -205,18 +191,16 @@ void FullSearch(std::string keywords[], std::vector<BookDescriptor> &pribdlist)
                 searchPath += DIRECTORY_SEPERATOR + PATH_FILE;
                 reader.open(searchPath);
                 if(!reader.good())
-                    return;
+                    return false;
 
                 while(std::getline(reader,bookDesPath))
                 {
                     bd.path = bookDesPath;
-                    bd.readFromFileForSearch();
+                    bd.readFromFile();
                     pribdlist.push_back(bd);
                 }
                 for(int m=i+1;m<SEARCH_KEYWORDS_SIZE;m++)
                     filterResult(pribdlist, m, keywords[m]);
-                reader.close();
-
             }
             break;
         case DATE:
@@ -224,52 +208,70 @@ void FullSearch(std::string keywords[], std::vector<BookDescriptor> &pribdlist)
                 searchPath = SEARCH_DIRS::DATE + keywords[DATE];
                 reader.open(searchPath);
                 if(!reader.good())
-                    return;
+                    return false;
+                for(int b=0; b<searchIndex_start; b++)
+                    std::getline(reader,bookDesPath);
+                int prevResCount;
 
-                while(std::getline(reader,bookDesPath))
-                {
-                    bd.path = bookDesPath;
-                    bd.readFromFileForSearch();
-                    pribdlist.push_back(bd);
-                }
-                for(int m=i+1;m<SEARCH_KEYWORDS_SIZE;m++)
-                    filterResult(pribdlist, m, keywords[m]);
-                reader.close();
+                    while(!fullResultRead && resultCount<= MAX_SEARCH_RESULT)
+                    {
+                        if(!std::getline(reader,bookDesPath))
+                        {
+                            fullResultRead = true;
+                            break;
+                        }
+                        bd.path = bookDesPath;
+                        bd.readFromFile();
+                        pribdlist.push_back(bd);
+                        prevResCount = pribdlist.size();
+                        filterResult(pribdlist, GENRE, keywords[GENRE],prevResCount-1);
+                        if(prevResCount == pribdlist.size())
+                            resultCount++;
+                    }
+                    if(resultCount == MAX_SEARCH_RESULT + 1)
+                        pribdlist.pop_back(); //extra element is kept at end just to be sure that more result can be found
+                    return !fullResultRead;
             }
             break;
         case GENRE:
             {
                 std::vector<std::string> genreWords;
-                int i;
+                int j, prevResCount;
                 Utility::String::breakString(keywords[GENRE], genreWords, std::string(" "));
-                for(i=0; i<genreWords.size(); i++)
+                for(j=0; j<genreWords.size(); j++)
                 {
-                    searchPath = SEARCH_DIRS::GENRE + genreWords[i][0] + DIRECTORY_SEPERATOR + genreWords[i];
+                    searchPath = SEARCH_DIRS::GENRE + genreWords[j][0] + DIRECTORY_SEPERATOR + genreWords[j];
                     reader.open(searchPath);
                     if(reader.good())
                         break;
                 }
-                if(i == genreWords.size())
-                    return;
-                while(std::getline(reader,bookDesPath))
-                {
-                    bd.path = bookDesPath;
-                    bd.readFromFileForSearch();
-                    pribdlist.push_back(bd);
-                }
-                for(int m=i+1; m<SEARCH_KEYWORDS_SIZE; m++)
-                    filterResult(pribdlist, m, keywords[m]);
-                for(int j=0;j<genreWords.size();j++)
-                    if(j!=i)
-                        filterResult(pribdlist, GENRE, genreWords[j]);
-                reader.close();
-
+                if(j == genreWords.size())
+                    return false;
+                while(!fullResultRead && resultCount<= MAX_SEARCH_RESULT)
+                    {
+                        if(!std::getline(reader,bookDesPath))
+                        {
+                            fullResultRead = true;
+                            break;
+                        }
+                        bd.path = bookDesPath;
+                        bd.readFromFile();
+                        pribdlist.push_back(bd);
+                        prevResCount = pribdlist.size();
+                        if(prevResCount == pribdlist.size())
+                            resultCount++;
+                    }
+                    if(resultCount == MAX_SEARCH_RESULT + 1)
+                        pribdlist.pop_back(); //extra element is kept at end just to be sure that more result can be found
+                    return !fullResultRead;
             }
             break;
         default:
             std::cout<<"\nEmpty keywords";
             break;
     }
+    reader.close();
+    return false;
 }
 
 int main()
@@ -289,14 +291,13 @@ int main()
     for(int i=0;i<4;i++)
         if(keywords[i] == "$") //$ is regarded as empty keyword
             keywords[i] = "";
-    FullSearch(keywords, bdlist);
+    std::cout<<"MORE RESULT CAN BE FOUND: "<<std::boolalpha<<FullSearch(keywords, bdlist);
     for(int i=0;i<bdlist.size();i++)
     {
-        bdlist[i].readFromFileForDisplay();
         std::cout<<"\n\nNAME: "<<bdlist[i].name;
         std::cout<<"\nAUTHORS: ";
-        for(int j=0;j<bdlist[i].authors.size(); j++)
-            std::cout<<"\t"<<bdlist[i].authors[j];
+        for(int j=0;j<bdlist[i].authors_display.size(); j++)
+            std::cout<<"\t"<<bdlist[i].authors_display[j];
         std::cout<<"\nPUBLISHED DATE: "<<bdlist[i].date;
         std::cout<<"\nGENRES: ";
         for(int j=0;j<bdlist[i].genres.size(); j++)
@@ -304,6 +305,7 @@ int main()
         std::cout<<"\nDESCRIPTION: ";
         for(int j=0;j<bdlist[i].extrades.size(); j++)
             std::cout<<"\t"<<bdlist[i].extrades[j];
+        std::cout<<"\nNO OF REVIEWS: "<<bdlist[i].noOfReveiws;
+        std::cout<<"\nRATING: "<<bdlist[i].review;
     }
 }
-
