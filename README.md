@@ -1,5 +1,5 @@
 # TheScholar
- An offline Book database for users to join and access.
+ An offline Book and article database for users to join and access.
  
 ## Created By:
 Nikesh D.C    (PUL075BCT052)
